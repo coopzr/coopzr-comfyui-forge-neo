@@ -1,0 +1,40 @@
+# Builds the image and pushes it to ghcr.io/coopzr/coopzr-comfyui-forge-neo,
+# tagged with RELEASE (from docker-bake.hcl) and `latest`.
+# It only runs when you click Actions -> Build -> Run workflow.
+name: Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      # The image is bigger than the runner's free disk space. From
+      # ashleykleynhans/stable-diffusion-docker.
+      - name: Free up disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt clean
+          df -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        run: docker buildx bake --push
