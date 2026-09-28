@@ -8,15 +8,22 @@ MODELS=/workspace/ComfyUI/models
 
 # --- 1. Sync -----------------------------------------------------------------
 # rsync -rlptD is -a without owner/group, which network volumes can refuse.
+# Runpod volumes are slow per file, not per byte, and the apps are ~80,000
+# small files, so the four copies run at the same time.
 sync_apps() {
-    local start=$SECONDS
-    echo "SYNC: copying the apps to /workspace, this takes a few minutes on first boot..."
-    mkdir -p /workspace/venvs
-    if ! {
-        rsync -rlptD /venv/ /workspace/venvs/forge-neo/ &&
-            rsync -rlptD /sd-webui-forge-neo/ /workspace/sd-webui-forge-neo/ &&
-            rsync -rlptD /ComfyUI/ /workspace/ComfyUI/ &&
-            /fix_venv.sh /venv /workspace/venvs/forge-neo &&
+    local start=$SECONDS failed=0 pid
+    local pids=()
+    echo "SYNC: copying the apps to /workspace, this can take 15-20 minutes on first boot..."
+    mkdir -p /workspace/venvs/forge-neo /workspace/sd-webui-forge-neo /workspace/ComfyUI/venv
+    rsync -rlptD /venv/ /workspace/venvs/forge-neo/ & pids+=($!)
+    rsync -rlptD /sd-webui-forge-neo/ /workspace/sd-webui-forge-neo/ & pids+=($!)
+    rsync -rlptD --exclude=/venv/ /ComfyUI/ /workspace/ComfyUI/ & pids+=($!)
+    rsync -rlptD /ComfyUI/venv/ /workspace/ComfyUI/venv/ & pids+=($!)
+    for pid in "${pids[@]}"; do
+        wait "$pid" || failed=1
+    done
+    if ((failed)) || ! {
+        /fix_venv.sh /venv /workspace/venvs/forge-neo &&
             /fix_venv.sh /ComfyUI/venv /workspace/ComfyUI/venv
     }; then
         echo "SYNC: FAILED. It will be retried on the next boot."
@@ -44,6 +51,15 @@ mkdir -p /workspace/logs
 for dir in checkpoints diffusion_models text_encoders clip vae loras controlnet upscale_models embeddings; do
     mkdir -p "$MODELS/$dir"
 done
+
+# ComfyUI-Manager installs with uv by default, but uv ignores PIP_CONSTRAINT
+# and can't see the image's torch, so a custom node needing torch would pull
+# in a second, newer torch. pip respects both.
+MANAGER_CFG=/workspace/ComfyUI/user/__manager/config.ini
+if [[ ! -f $MANAGER_CFG ]]; then
+    mkdir -p "$(dirname "$MANAGER_CFG")"
+    printf '[default]\nuse_uv = False\n' > "$MANAGER_CFG"
+fi
 
 if [[ ! -f /workspace/forge_args.txt ]]; then
     cat > /workspace/forge_args.txt <<'EOF'

@@ -18,6 +18,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1 \
     PIP_ROOT_USER_ACTION=ignore \
     PIP_EXTRA_INDEX_URL=${TORCH_INDEX} \
     PIP_CONSTRAINT=/opt/constraints.txt \
+    UV_CONSTRAINT=/opt/constraints.txt \
     PYTHONUNBUFFERED=1 \
     TZ=Etc/UTC \
     HF_HOME=/workspace/.cache/huggingface \

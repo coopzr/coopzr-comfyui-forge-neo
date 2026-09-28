@@ -20,7 +20,7 @@ The GPU host needs NVIDIA driver 580 or newer. On Runpod, filter for **CUDA 13.0
 |---|---|
 | 3000 | Forge Neo (login required) |
 | 3020 | ComfyUI (login required) |
-| 8888 | JupyterLab (asks for `JUPYTER_PASSWORD`) |
+| 8888 | JupyterLab (needs `JUPYTER_PASSWORD`, see below) |
 | 22 | SSH (TCP, key only) |
 
 ## Logging in
@@ -49,7 +49,9 @@ Don't put models in Forge's own `models/` folder; ComfyUI can't see them there.
 
 ## Extensions and custom nodes
 
-Install them from each app's UI: Forge's **Extensions** tab, and **Manager** in ComfyUI. They live on the volume, so they survive pod restarts.
+Install them from each app's UI: Forge's **Extensions** tab, and **Extensions → Nodes Manager** in ComfyUI. They live on the volume, so they survive pod restarts.
+
+ComfyUI-Manager is set to install with pip instead of uv (`use_uv = False` in `/workspace/ComfyUI/user/__manager/config.ini`). uv can't see the image's torch, so a custom node that lists `torch` would get a second, different torch. Keep it on pip.
 
 ## Launch arguments
 
@@ -61,7 +63,7 @@ Add extra arguments to `/workspace/forge_args.txt` or `/workspace/comfyui_args.t
 restart forge      # or: restart comfyui, restart all
 ```
 
-Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. The first boot of each new image version copies the apps to `/workspace`, which takes a few minutes. Until it's done, the web ports show a "not up yet" page.
+Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. The first boot of each new image version copies the apps to `/workspace`. Runpod volumes are slow with many small files, so this can take 15–20 minutes (network volumes can be slower). Until it's done, the web ports show a "not up yet" page. Later boots skip it.
 
 ## Environment variables
 
@@ -70,7 +72,7 @@ Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. Th
 | `WEBUI_USERNAME` | `admin` | Login username for ports 3000 and 3020 |
 | `WEBUI_PASSWORD` | generated | Login password (see [Logging in](#logging-in)) |
 | `PUBLIC_KEY` | unset | Your SSH public key. SSH only starts when this is set. |
-| `JUPYTER_PASSWORD` | set by Runpod | JupyterLab's password. Jupyter only starts when this is set. |
+| `JUPYTER_PASSWORD` | unset | JupyterLab's password. Jupyter only starts when this is set. Runpod sets it only if you tick **Start Jupyter Notebook** when deploying; otherwise set it in the template, e.g. `{{ RUNPOD_SECRET_jupyter_password }}`. |
 | `DISABLE_AUTOLAUNCH` | unset | Set to anything to not start the apps; use `restart` to start them. |
 | `DISABLE_SYNC` | unset | Set to anything to skip copying the apps to `/workspace`. |
 
@@ -89,7 +91,7 @@ Everything else installs at its latest version when the image is built. The pins
 | `FORGE_COMMIT` | a commit SHA | Forge Neo has no release tags |
 | `COMFYUI_VERSION` | v0.37.0 | The released ComfyUI version |
 
-Torch can't be replaced by accident: `PIP_CONSTRAINT` makes every `pip install` keep the pinned versions, in the image and on the pod.
+Torch can't be replaced by accident: `PIP_CONSTRAINT` makes every `pip install` keep the pinned versions, in the image and on the pod. `UV_CONSTRAINT` does the same for uv, if you run it by hand.
 
 ### Releasing a new version
 

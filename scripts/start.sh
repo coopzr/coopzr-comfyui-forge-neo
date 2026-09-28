@@ -59,7 +59,8 @@ setup_ssh() {
 # --- 4. Jupyter, only with JUPYTER_PASSWORD (Runpod sets it) -----------------
 start_jupyter() {
     if [[ -z ${JUPYTER_PASSWORD:-} ]]; then
-        echo "JUPYTER: JUPYTER_PASSWORD is not set, skipping"
+        echo "JUPYTER: JUPYTER_PASSWORD is not set, skipping. Tick \"Start Jupyter Notebook\""
+        echo "JUPYTER: when deploying, or set JUPYTER_PASSWORD in the template."
         return
     fi
     echo "JUPYTER: starting on port 8888"
