@@ -63,7 +63,7 @@ Add extra arguments to `/workspace/forge_args.txt` or `/workspace/comfyui_args.t
 restart forge      # or: restart comfyui, restart all
 ```
 
-Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. The first boot of each new image version copies the apps to `/workspace`. Runpod volumes are slow with many small files, so this can take 15–20 minutes (network volumes can be slower). Until it's done, the web ports show a "not up yet" page. Later boots skip it.
+Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. nginx errors are in `/var/log/nginx/error.log` (on the container disk, not the volume). The first boot of each new image version copies the apps to `/workspace`. Runpod volumes are slow with many small files, so this can take 15–20 minutes (network volumes can be slower). Until it's done, the web ports show a "not up yet" page. Later boots skip it.
 
 ## Environment variables
 
@@ -72,7 +72,7 @@ Logs are in `/workspace/logs/`: `forge.log`, `comfyui.log` and `jupyter.log`. Th
 | `WEBUI_USERNAME` | `admin` | Login username for ports 3000 and 3020 |
 | `WEBUI_PASSWORD` | generated | Login password (see [Logging in](#logging-in)) |
 | `PUBLIC_KEY` | unset | Your SSH public key. SSH only starts when this is set. |
-| `JUPYTER_PASSWORD` | unset | JupyterLab's password. Jupyter only starts when this is set. Runpod sets it only if you tick **Start Jupyter Notebook** when deploying; otherwise set it in the template, e.g. `{{ RUNPOD_SECRET_jupyter_password }}`. |
+| `JUPYTER_PASSWORD` | unset | JupyterLab's password. Jupyter only starts when this is set. Set it in the template, e.g. `{{ RUNPOD_SECRET_jupyter_password }}`. With a secret, the Jupyter link on Runpod's Connect page doesn't log you in (it contains the `{{ ... }}` text), so type the password on Jupyter's login page. |
 | `DISABLE_AUTOLAUNCH` | unset | Set to anything to not start the apps; use `restart` to start them. |
 | `DISABLE_SYNC` | unset | Set to anything to skip copying the apps to `/workspace`. |
 

@@ -17,7 +17,7 @@ variable "APP" {
 
 # Bump this for every new image you publish (see README, "Maintaining it").
 variable "RELEASE" {
-    default = "1.0.1"
+    default = "1.0.2"
 }
 
 # --- Pins: the only versions fixed on purpose -------------------------------
